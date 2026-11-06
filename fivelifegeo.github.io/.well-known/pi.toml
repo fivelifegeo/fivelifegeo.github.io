@@ -1,0 +1,22 @@
+VERSION="2.0.0"
+
+[DOCUMENTATION]
+ORG_NAME="5LIFE"
+ORG_DBA="5LIFE Token"
+ORG_URL="https://fivelifegeo.github.io"
+ORG_DESCRIPTION="5LIFE is the official community token for FiveLifeGeo - Empowering Web3 on Pi Network."
+
+[[PRINCIPALS]]
+name="Geovanie Pascual"
+email="fivelifegeo@gmail.com"
+
+[[CURRENCIES]]
+code="5LIFE"
+issuer="GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS"
+displayDecimals=2
+name="5LIFE Token"
+desc="5LIFE is the utility token for FiveLifeGeo ecosystem on Pi Network Testnet"
+is_asset_displayed=true
+
+[VALIDATORS]
+[[CURRENCIES.images]]
