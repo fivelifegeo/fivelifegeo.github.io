@@ -1,29 +1,34 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Mint 5LIFE</title>
+<html><head><meta charset="UTF-8"><title>Mint 5LIFE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
 </head>
 <body style="font-family:sans-serif;padding:20px;max-width:500px;margin:auto">
-<h2>Mint 5LIFE - Pi Testnet</h2>
-<p>Issuer: GD3OIJAV6770HQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2B5</p>
-<button onclick="mint()" style="padding:12px;width:100%;background:#6f42c1;color:white;border:none;border-radius:10px;font-size:16px">MINT 5LIFE</button>
-<div id="log" style="margin-top:15px;background:#f5f5f5;padding:10px;border-radius:10px;white-space:pre-wrap;font-size:12px"></div>
+<h2>Mint 5LIFE</h2>
+<p>Issuer: GD3OI...EX2B5 (100 Test-Pi funded ✅)</p>
+<label>Amount to mint:</label><br>
+<input id="amt" value="1000000" style="width:100%;padding:10px;margin:5px 0"><br>
+<label>Secret Key ng Issuer (S...):</label><br>
+<input id="sec" placeholder="SB3..." style="width:100%;padding:10px;margin:5px 0"><br>
+<button onclick="doMint()" style="width:100%;padding:12px;background:#6f42c1;color:white;border:none;border-radius:10px;margin-top:10px">MINT NOW</button>
+<div id="log" style="margin-top:15px;background:#f5f5f5;padding:10px;border-radius:10px;font-size:12px;white-space:pre-wrap"></div>
 <script>
-const server = new StellarSdk.Horizon.Server('https://api.testnet.minepi.com');
-const issuer = 'GD3OIJAV6770HQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2B5';
-async function mint(){
- let log=document.getElementById('log');
- log.innerText='Checking issuer...';
+const server=new StellarSdk.Horizon.Server('https://api.testnet.minepi.com');
+const issuer='GD3OIJAV6770HQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2B5';
+async function doMint(){
+ let log=document.getElementById('log'),amt=document.getElementById('amt').value,sec=document.getElementById('sec').value;
+ if(!sec.startsWith('S')){log.innerText='Ilagay Secret Key na S...';return;}
+ log.innerText='Minting '+amt+' 5LIFE...';
  try{
+  const kp=StellarSdk.Keypair.fromSecret(sec);
+  if(kp.publicKey()!=issuer){log.innerText='Mali Secret! Hindi ito sa GD3OI...';return;}
   const acc=await server.loadAccount(issuer);
-  log.innerText+='\n✅ Issuer OK: '+issuer+'\nBalances:\n'+JSON.stringify(acc.balances,null,2);
-  log.innerText+='\n\nREADY TO MINT - Fund first if not found';
- }catch(e){
-  log.innerText+='\n❌ Issuer NOT FOUND\nPunta ka sa: https://faucet.testnet.minepi.com\nI-paste address na to:\n'+issuer;
- }
+  const asset=new StellarSdk.Asset('5LIFE',issuer);
+  const tx=new StellarSdk.TransactionBuilder(acc,{fee:StellarSdk.BASE_FEE,networkPassphrase:'Pi Testnet'})
+  .addOperation(StellarSdk.Operation.payment({destination:issuer,asset:asset,amount:amt.toString()}))
+  .setTimeout(60).build();
+  tx.sign(kp);
+  const res=await server.submitTransaction(tx);
+  log.innerText='✅ MINT SUCCESS!\n'+amt+' 5LIFE minted!\nHash: '+res.hash+'\n\nCheck: https://api.testnet.minepi.com/accounts/'+issuer;
+ }catch(e){log.innerText='❌ Error: '+(e.response?JSON.stringify(e.response.data):e.message);}
 }
-</script>
-</body>
-</html>
+</script></body></html>
