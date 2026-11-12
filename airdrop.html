@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>5LIFE Airdrop</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
+</head>
+<body style="font-family:sans-serif;padding:20px;max-width:500px;margin:auto">
+<h2>🚀 5LIFE Airdrop Sender</h2>
+<p>From: GD3OIJAV...EX2BS (1B Supply)</p>
+
+<label>Issuer Secret (S...):</label>
+<input id="sec" placeholder="SD... secret ng issuer" type="password" style="width:100%;padding:10px;margin:5px 0">
+
+<label>Receiver Wallet (G...):</label>
+<input id="recv" placeholder="GD... wallet ng tatanggap" style="width:100%;padding:10px;margin:5px 0">
+
+<label>Amount:</label>
+<input id="amt" value="100" style="width:100%;padding:10px;margin:5px 0">
+
+<button onclick="send()" style="width:100%;padding:14px;background:#6f42c1;color:white;border:none;border-radius:10px;margin-top:10px;font-weight:bold">SEND 5LIFE NOW</button>
+
+<hr style="margin:20px 0">
+<h3>Bulk Send (Optional)</h3>
+<textarea id="bulk" placeholder="GA...1,100&#10;GA...2,500&#10;GA...3,1000" style="width:100%;height:100px;padding:10px"></textarea>
+<button onclick="sendBulk()" style="width:100%;padding:12px;background:#ff6d00;color:white;border:none;border-radius:10px;margin-top:5px">SEND BULK</button>
+
+<div id="log" style="margin-top:15px;background:#f5f5f5;padding:10px;border-radius:10px;font-size:12px;white-space:pre-wrap"></div>
+
+<script>
+const server=new StellarSdk.Horizon.Server('https://api.testnet.minepi.com');
+const issuer='GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS';
+async function send(){
+ let log=document.getElementById('log');
+ let sec=document.getElementById('sec').value.trim();
+ let recv=document.getElementById('recv').value.trim();
+ let amt=document.getElementById('amt').value.trim();
+ if(!sec.startsWith('S')||!recv.startsWith('G')){log.innerText='Check secret at receiver!';return;}
+ log.innerText='Sending '+amt+' 5LIFE to '+recv+'...\n';
+ try{
+  const kp=StellarSdk.Keypair.fromSecret(sec);
+  const acc=await server.loadAccount(kp.publicKey());
+  const asset=new StellarSdk.Asset('5LIFE',issuer);
+  const tx=new StellarSdk.TransactionBuilder(acc,{fee:"1000000",networkPassphrase:'Pi Testnet'})
+  .addOperation(StellarSdk.Operation.payment({destination:recv,asset:asset,amount:amt}))
+  .setTimeout(60).build();
+  tx.sign(kp);
+  const res=await server.submitTransaction(tx);
+  log.innerText+='\n✅ SENT! '+amt+' 5LIFE\nHash: '+res.hash;
+ }catch(e){log.innerText+='\n❌ Error: '+(e.response?JSON.stringify(e.response.data,null,2):e.message);}
+}
+async function sendBulk(){
+ let log=document.getElementById('log');
+ let sec=document.getElementById('sec').value.trim();
+ let lines=document.getElementById('bulk').value.trim().split('\n');
+ if(!sec.startsWith('S')){log.innerText='Lagay issuer secret!';return;}
+ log.innerText='Bulk sending '+lines.length+' wallets...\n';
+ try{
+  const kp=StellarSdk.Keypair.fromSecret(sec);
+  for(let line of lines){
+   if(!line.includes(','))continue;
+   let [recv,amt]=line.split(',').map(s=>s.trim());
+   log.innerText+='\nSending '+amt+' to '+recv.slice(0,10)+'...';
+   const acc=await server.loadAccount(kp.publicKey());
+   const asset=new StellarSdk.Asset('5LIFE',issuer);
+   const tx=new StellarSdk.TransactionBuilder(acc,{fee:"1000000",networkPassphrase:'Pi Testnet'})
+   .addOperation(StellarSdk.Operation.payment({destination:recv,asset:asset,amount:amt}))
+   .setTimeout(60).build();
+   tx.sign(kp);
+   const res=await server.submitTransaction(tx);
+   log.innerText+=' ✅ '+res.hash.slice(0,8);
+   await new Promise(r=>setTimeout(r,2000));
+  }
+  log.innerText+='\n\n🎉 BULK DONE!';
+ }catch(e){log.innerText+='\n❌ Error: '+(e.response?JSON.stringify(e.response.data,null,2):e.message);}
+}
+</script>
+</body></html>
