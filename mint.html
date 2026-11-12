@@ -5,10 +5,8 @@
 <body style="font-family:sans-serif;padding:20px;max-width:500px;margin:auto">
 <h2>Mint 5LIFE - 1 BILLION</h2>
 <p>Issuer: GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS ✅</p>
-<label>Amount:</label><br>
 <input id="amt" value="1000000000" style="width:100%;padding:10px;margin:5px 0"><br>
-<label>Secret Key (S...):</label><br>
-<input id="sec" placeholder="SD... or SB3..." style="width:100%;padding:10px;margin:5px 0"><br>
+<input id="sec" placeholder="SD... secret" style="width:100%;padding:10px;margin:5px 0"><br>
 <button onclick="doMint()" style="width:100%;padding:12px;background:#6f42c1;color:white;border:none;border-radius:10px;margin-top:10px">MINT 1 BILLION NOW</button>
 <div id="log" style="margin-top:15px;background:#f5f5f5;padding:10px;border-radius:10px;font-size:12px;white-space:pre-wrap"></div>
 <script>
@@ -22,11 +20,10 @@ async function doMint(){
  log.innerText='Checking key...\n';
  try{
   const kp=StellarSdk.Keypair.fromSecret(sec);
-  log.innerText+='Public mo: '+kp.publicKey()+'\nIssuer: '+issuer+'\n';
-  log.innerText+='Minting '+amt+' 5LIFE...\n';
+  log.innerText+='Public mo: '+kp.publicKey()+'\nIssuer: '+issuer+'\nMinting '+amt+' 5LIFE...\n';
   const acc=await server.loadAccount(issuer);
   const asset=new StellarSdk.Asset('5LIFE',issuer);
-  const tx=new StellarSdk.TransactionBuilder(acc,{fee:StellarSdk.BASE_FEE,networkPassphrase:'Pi Testnet'})
+  const tx=new StellarSdk.TransactionBuilder(acc,{fee:"1000000",networkPassphrase:'Pi Testnet'})
   .addOperation(StellarSdk.Operation.payment({destination:issuer,asset:asset,amount:amt}))
   .setTimeout(60).build();
   tx.sign(kp);
