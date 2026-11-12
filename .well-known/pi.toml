@@ -1,10 +1,22 @@
+[DOCUMENTATION]
+ORG_NAME="5LIFE Token"
+ORG_DBA="5LIFE GEO"
+ORG_URL="https://fivelifegeo.github.io"
+ORG_LOGO="https://fivelifegeo.github.io/logo.png"
+ORG_DESCRIPTION="5LIFE GEO - 1B Supply"
+
+[[CURRENCIES]]
+code="5LIFE"
+issuer="GC7A6N7MAOU52RVRCIO7BADA24CHKYVG77IOBXNAGU2UVM7P2S3KDSMT"
+display_decimals=7
+name="5LIFE Token"
+desc="5LIFE GEO 1B Supply"
+image="https://fivelifegeo.github.io/logo.png"
+
 [[CURRENCIES]]
 code="5LIFE"
 issuer="GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS"
-name="5LIFE"
-desc="5LIFE community token on Pi Network"
-image="https://fivelifegeo.github.io/5life.png"
-
-[DOCUMENTATION]
-orgName="FiveLife"
-orgUrl="https://fivelifegeo.github.io"
+display_decimals=7
+name="5LIFE Token"
+desc="5LIFE GEO 1B Supply"
+image="https://fivelifegeo.github.io/logo.png"
