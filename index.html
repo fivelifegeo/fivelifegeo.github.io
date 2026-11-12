@@ -76,7 +76,7 @@ body{background:#f5f0ff;height:100vh;display:flex;flex-direction:column;overflow
 <div id="leaderList" style="margin-top:8px;font-size:13px">Loading...</div>
 </div>
 <div class="footer-links">
-<a href="privacy.html">Privacy</a> | <a href="terms.html">TOS</a> | <a href="#" onclick="resetData()">Reset</a>
+<a href="privacy.html">Privacy</a> | <a href="terms.html">TOS</a>
 <br>
 <small id="refInfo" style="display:block;margin-top:6px;color:#333"></small>
 <p id="status" style="margin-top:8px;color:#666"></p>
@@ -123,7 +123,7 @@ function restoreSession(){
     document.getElementById('connectBtn').style.display='none';
     document.getElementById('mineBtn').style.display='block';
     document.getElementById('geoBtn').style.display='block';
-    document.getElementById('status').innerText='✅ Auto-Connected';
+    document.getElementById('status').innerText='✅ Wallet Connected - Ready';
   }
   if(sessionStart && Date.now()-sessionStart < 86400000){
     if(lastUpdate){
@@ -192,7 +192,6 @@ function toggleMining(){
 }
 function checkLocation(){ if(!navigator.geolocation){ alert('No GPS'); return; } document.getElementById('geoStatus').innerText='Checking...'; navigator.geolocation.getCurrentPosition(()=>{ geoEnabled=true; localStorage.setItem('5life_geo','1'); updateUI(); document.getElementById('geoStatus').innerText='GEO +25% Active!'; document.getElementById('geoBtn').style.display='none'; },()=>{ document.getElementById('geoStatus').innerText='Enable GPS'; }); }
 function shareApp(){ const refLink=`https://fivelifegeo.github.io?ref=${username||'geovaniepascual'}`; if(navigator.share) navigator.share({title:'5LIFE GEO', text:`Mine with me! ${refLink}`, url:refLink}); else { navigator.clipboard.writeText(refLink); alert('Copied: '+refLink); refCount++; localStorage.setItem('5life_ref',refCount); updateUI(); } }
-function resetData(){ if(confirm('Reset ALL? Balance will be 0!')){ localStorage.clear(); location.reload(); } }
 </script>
 </body>
-                                                                            </html>
+  </html>
