@@ -78,10 +78,6 @@ body{background:#f5f0ff;height:100vh;display:flex;flex-direction:column;overflow
 <div class="footer-links">
 <a href="privacy.html">Privacy</a> | <a href="terms.html">TOS</a> | <a href="#" onclick="resetData()">Reset</a>
 <br>
-<div style="margin:14px 0; display:flex; gap:8px; justify-content:center; flex-wrap:wrap">
-<a href="trustline.html" style="background:#000;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:bold">🔗 Trustline</a>
-<a href="airdrop.html" style="background:#ff9800;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:bold">🚀 Airdrop</a>
-</div>
 <small id="refInfo" style="display:block;margin-top:6px;color:#333"></small>
 <p id="status" style="margin-top:8px;color:#666"></p>
 </div>
@@ -93,7 +89,110 @@ body{background:#f5f0ff;height:100vh;display:flex;flex-direction:column;overflow
 <div class="nav-item"><span class="icon">👛</span>Wallet</div>
 </div>
 <script>
-const Pi = window.Pi; Pi.init({ version: "2.0", sandbox: true }); let username=null, mining=false; let balance=parseFloat(localStorage.getItem('5life_balance')||'0'); let sessionStart=parseInt(localStorage.getItem('5life_session')||'0'); let refCount=parseInt(localStorage.getItem('5life_ref')||'0'); let geoEnabled=localStorage.getItem('5life_geo')==='1'; let interval=null, timerInterval=null; const urlParams=new URLSearchParams(window.location.search); const refBy=urlParams.get('ref'); if(refBy){ document.getElementById('refInfo').innerText=`Invited by @${refBy} - You get +5%`; localStorage.setItem('5life_invited',refBy); } function updateUI(){ document.getElementById('balance').innerText=balance.toFixed(2); document.getElementById('balanceMini').innerText=balance.toFixed(2)+' 5LIFE'; document.getElementById('refCount').innerText=refCount; document.getElementById('statRef').innerText=refCount; document.getElementById('geoBonus').innerText=geoEnabled?'+25%':'+0%'; document.getElementById('statGeo').innerText=geoEnabled?'ON ✅':'OFF'; if(geoEnabled) document.getElementById('geoBonus').style.color='#28a745'; } function updateLeaderboard(){ const board=JSON.parse(localStorage.getItem('5life_board')||'[]'); if(username){ const ex=board.find(b=>b.u===username); if(ex) ex.b=balance; else board.push({u:username,b:balance}); } board.sort((a,b)=>b.b-a.b); localStorage.setItem('5life_board',JSON.stringify(board)); document.getElementById('leaderList').innerHTML=board.slice(0,5).map((e,i)=>`${i+1}. <b>@${e.u}</b>: ${e.b.toFixed(2)} 5LIFE`).join('<br>')||'Be first!'; } updateUI(); updateLeaderboard(); async function login(){ try{ const auth=await Pi.authenticate(['username'],()=>{}); username=auth.user.username; document.getElementById('userBadge').innerText='@'+username; document.getElementById('connectBtn').style.display='none'; document.getElementById('mineBtn').style.display='block'; document.getElementById('geoBtn').style.display='block'; document.getElementById('status').innerText='✅ Wallet Connected - Ready'; document.getElementById('mineStatus').innerText='READY'; updateLeaderboard(); if(sessionStart && Date.now()-sessionStart < 86400000) toggleMining(); }catch(e){ alert(e.message); } } function getRate(){ let r=0.10; if(localStorage.getItem('5life_invited')) r+=0.005; r+=refCount*0.01; if(geoEnabled) r*=1.25; return r; } function toggleMining(){ if(!mining){ if(!sessionStart || Date.now()-sessionStart > 86400000){ sessionStart=Date.now(); localStorage.setItem('5life_session',sessionStart); } mining=true; document.getElementById('mineBtn').innerText='⏸️ Stop Mining'; document.getElementById('mineBtn').className='btn-main btn-stop'; document.getElementById('mineCircle').classList.add('active'); document.getElementById('mineStatus').innerText='MINING...'; document.getElementById('rate').innerText=getRate().toFixed(2); interval=setInterval(()=>{ balance+=getRate(); localStorage.setItem('5life_balance',balance); updateUI(); updateLeaderboard(); },1000); timerInterval=setInterval(()=>{ const remain=86400000 - (Date.now()-sessionStart); if(remain<=0){ toggleMining(); document.getElementById('status').innerText='Session Done'; localStorage.setItem('5life_session','0'); return; } const h=Math.floor(remain/3600000), m=Math.floor((remain%3600000)/60000), s=Math.floor((remain%60000)/1000); document.getElementById('timer').innerText=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000); }else{ mining=false; clearInterval(interval); clearInterval(timerInterval); document.getElementById('mineBtn').innerText='▶️ Start Mining'; document.getElementById('mineBtn').className='btn-main btn-mine'; document.getElementById('mineCircle').classList.remove('active'); document.getElementById('mineStatus').innerText='PAUSED'; } } function checkLocation(){ if(!navigator.geolocation){ alert('No GPS'); return; } document.getElementById('geoStatus').innerText='Checking...'; navigator.geolocation.getCurrentPosition(()=>{ geoEnabled=true; localStorage.setItem('5life_geo','1'); updateUI(); document.getElementById('geoStatus').innerText='GEO +25% Active!'; document.getElementById('geoBtn').style.display='none'; },()=>{ document.getElementById('geoStatus').innerText='Enable GPS'; }); } function shareApp(){ const refLink=`https://fivelifegeo.github.io?ref=${username||'geovaniepascual'}`; if(navigator.share) navigator.share({title:'5LIFE GEO', text:`Mine with me! ${refLink}`, url:refLink}); else { navigator.clipboard.writeText(refLink); alert('Copied: '+refLink); refCount++; localStorage.setItem('5life_ref',refCount); updateUI(); } } function resetData(){ if(confirm('Reset?')){ localStorage.clear(); location.reload(); } } 
+const Pi = window.Pi; Pi.init({ version: "2.0", sandbox: true });
+let username=localStorage.getItem('5life_user')||null, mining=false;
+let balance=parseFloat(localStorage.getItem('5life_balance')||'0');
+let sessionStart=parseInt(localStorage.getItem('5life_session')||'0');
+let lastUpdate=parseInt(localStorage.getItem('5life_last')||'0');
+let refCount=parseInt(localStorage.getItem('5life_ref')||'0');
+let geoEnabled=localStorage.getItem('5life_geo')==='1';
+let interval=null, timerInterval=null;
+const urlParams=new URLSearchParams(window.location.search);
+const refBy=urlParams.get('ref');
+if(refBy){ document.getElementById('refInfo').innerText=`Invited by @${refBy} - You get +5%`; localStorage.setItem('5life_invited',refBy); }
+function getRate(){ let r=0.10; if(localStorage.getItem('5life_invited')) r+=0.005; r+=refCount*0.01; if(geoEnabled) r*=1.25; return r; }
+function updateUI(){ 
+  document.getElementById('balance').innerText=balance.toFixed(2);
+  document.getElementById('balanceMini').innerText=balance.toFixed(2)+' 5LIFE';
+  document.getElementById('refCount').innerText=refCount;
+  document.getElementById('statRef').innerText=refCount;
+  document.getElementById('geoBonus').innerText=geoEnabled?'+25%':'+0%';
+  document.getElementById('statGeo').innerText=geoEnabled?'ON ✅':'OFF';
+  if(geoEnabled) document.getElementById('geoBonus').style.color='#28a745';
+  document.getElementById('rate').innerText=getRate().toFixed(2);
+}
+function updateLeaderboard(){
+  const board=JSON.parse(localStorage.getItem('5life_board')||'[]');
+  if(username){ const ex=board.find(b=>b.u===username); if(ex) ex.b=balance; else board.push({u:username,b:balance}); }
+  board.sort((a,b)=>b.b-a.b); localStorage.setItem('5life_board',JSON.stringify(board));
+  document.getElementById('leaderList').innerHTML=board.slice(0,5).map((e,i)=>`${i+1}. <b>@${e.u}</b>: ${e.b.toFixed(2)} 5LIFE`).join('<br>')||'Be first!';
+}
+function restoreSession(){
+  if(username){
+    document.getElementById('userBadge').innerText='@'+username;
+    document.getElementById('connectBtn').style.display='none';
+    document.getElementById('mineBtn').style.display='block';
+    document.getElementById('geoBtn').style.display='block';
+    document.getElementById('status').innerText='✅ Auto-Connected';
+  }
+  if(sessionStart && Date.now()-sessionStart < 86400000){
+    if(lastUpdate){
+      let elapsed = Math.floor((Date.now() - lastUpdate)/1000);
+      if(elapsed>0 && elapsed < 86400){
+        let earned = elapsed * getRate();
+        balance += earned;
+        localStorage.setItem('5life_balance',balance);
+      }
+    }
+    setTimeout(()=>{ if(!mining) toggleMining(); }, 800);
+  }
+  updateUI(); updateLeaderboard();
+}
+updateUI(); updateLeaderboard(); restoreSession();
+async function login(){
+  try{
+    const auth=await Pi.authenticate(['username'],()=>{});
+    username=auth.user.username;
+    localStorage.setItem('5life_user', username);
+    document.getElementById('userBadge').innerText='@'+username;
+    document.getElementById('connectBtn').style.display='none';
+    document.getElementById('mineBtn').style.display='block';
+    document.getElementById('geoBtn').style.display='block';
+    document.getElementById('status').innerText='✅ Wallet Connected - Ready';
+    document.getElementById('mineStatus').innerText='READY';
+    updateLeaderboard();
+    if(sessionStart && Date.now()-sessionStart < 86400000) toggleMining();
+  }catch(e){ alert(e.message); }
+}
+function toggleMining(){
+  if(!mining){
+    if(!sessionStart || Date.now()-sessionStart > 86400000){
+      sessionStart=Date.now(); localStorage.setItem('5life_session',sessionStart);
+    }
+    mining=true; lastUpdate=Date.now();
+    document.getElementById('mineBtn').innerText='⏸️ Stop Mining';
+    document.getElementById('mineBtn').className='btn-main btn-stop';
+    document.getElementById('mineCircle').classList.add('active');
+    document.getElementById('mineStatus').innerText='MINING...';
+    document.getElementById('rate').innerText=getRate().toFixed(2);
+    interval=setInterval(()=>{
+      balance+=getRate(); 
+      localStorage.setItem('5life_balance',balance);
+      localStorage.setItem('5life_last', Date.now());
+      updateUI(); updateLeaderboard();
+    },1000);
+    timerInterval=setInterval(()=>{
+      const remain=86400000 - (Date.now()-sessionStart);
+      if(remain<=0){
+        toggleMining(); document.getElementById('status').innerText='Session Done - Start New!';
+        localStorage.setItem('5life_session','0'); localStorage.setItem('5life_last','0');
+        document.getElementById('timer').innerText='00:00:00'; return;
+      }
+      const h=Math.floor(remain/3600000), m=Math.floor((remain%3600000)/60000), s=Math.floor((remain%60000)/1000);
+      document.getElementById('timer').innerText=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    },1000);
+  }else{
+    mining=false; clearInterval(interval); clearInterval(timerInterval);
+    localStorage.setItem('5life_last', Date.now());
+    document.getElementById('mineBtn').innerText='▶️ Start Mining';
+    document.getElementById('mineBtn').className='btn-main btn-mine';
+    document.getElementById('mineCircle').classList.remove('active');
+    document.getElementById('mineStatus').innerText='PAUSED';
+  }
+}
+function checkLocation(){ if(!navigator.geolocation){ alert('No GPS'); return; } document.getElementById('geoStatus').innerText='Checking...'; navigator.geolocation.getCurrentPosition(()=>{ geoEnabled=true; localStorage.setItem('5life_geo','1'); updateUI(); document.getElementById('geoStatus').innerText='GEO +25% Active!'; document.getElementById('geoBtn').style.display='none'; },()=>{ document.getElementById('geoStatus').innerText='Enable GPS'; }); }
+function shareApp(){ const refLink=`https://fivelifegeo.github.io?ref=${username||'geovaniepascual'}`; if(navigator.share) navigator.share({title:'5LIFE GEO', text:`Mine with me! ${refLink}`, url:refLink}); else { navigator.clipboard.writeText(refLink); alert('Copied: '+refLink); refCount++; localStorage.setItem('5life_ref',refCount); updateUI(); } }
+function resetData(){ if(confirm('Reset ALL? Balance will be 0!')){ localStorage.clear(); location.reload(); } }
 </script>
 </body>
-                                                                                   </html>
+                                                                            </html>
