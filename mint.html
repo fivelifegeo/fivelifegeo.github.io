@@ -4,7 +4,7 @@
 </head>
 <body style="font-family:sans-serif;padding:20px;max-width:500px;margin:auto">
 <h2>Mint 5LIFE - 1 BILLION</h2>
-<p>Issuer: GD3OIJAV6770HQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS ✅</p>
+<p>Issuer: GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS ✅</p>
 <label>Amount:</label><br>
 <input id="amt" value="1000000000" style="width:100%;padding:10px;margin:5px 0"><br>
 <label>Secret Key (S...):</label><br>
@@ -13,7 +13,7 @@
 <div id="log" style="margin-top:15px;background:#f5f5f5;padding:10px;border-radius:10px;font-size:12px;white-space:pre-wrap"></div>
 <script>
 const server=new StellarSdk.Horizon.Server('https://api.testnet.minepi.com');
-const issuer='GD3OIJAV6770HQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS';
+const issuer='GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS';
 async function doMint(){
  let log=document.getElementById('log');
  let amt=document.getElementById('amt').value.trim();
@@ -23,7 +23,6 @@ async function doMint(){
  try{
   const kp=StellarSdk.Keypair.fromSecret(sec);
   log.innerText+='Public mo: '+kp.publicKey()+'\nIssuer: '+issuer+'\n';
-  if(kp.publicKey()!=issuer){log.innerText+='\n⚠️ Iba address pero try pa rin mint...\n';}
   log.innerText+='Minting '+amt+' 5LIFE...\n';
   const acc=await server.loadAccount(issuer);
   const asset=new StellarSdk.Asset('5LIFE',issuer);
