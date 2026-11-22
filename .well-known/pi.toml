@@ -1,22 +1,20 @@
+
 [DOCUMENTATION]
-ORG_NAME="5LIFE Token"
+ORG_NAME="5LIFE GEO"
 ORG_DBA="5LIFE GEO"
 ORG_URL="https://fivelifegeo.github.io"
 ORG_LOGO="https://fivelifegeo.github.io/logo.png"
-ORG_DESCRIPTION="5LIFE GEO - 1B Supply"
+ORG_DESCRIPTION="5LIFE GEO - Community Token"
+ORG_PHYSICAL_ADDRESS="Silang, Cavite, Philippines"
+ORG_OFFICIAL_EMAIL="contact@fivelifegeo.github.io"
 
 [[CURRENCIES]]
 code="5LIFE"
-issuer="GC7A6N7MAOU52RVRCIO7BADA24CHKYVG77IOBXNAGU2UVM7P2S3KDSMT"
+issuer="GD301JAV677GHQZ25QXVMDMA3KJ6CGBMMKXZLGTBVUFC4TN2EXZB5"
 display_decimals=7
 name="5LIFE Token"
-desc="5LIFE GEO 1B Supply"
+desc="5LIFE GEO Community Token"
 image="https://fivelifegeo.github.io/logo.png"
-
-[[CURRENCIES]]
-code="5LIFE"
-issuer="GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS"
-display_decimals=7
-name="5LIFE Token"
-desc="5LIFE GEO 1B Supply"
-image="https://fivelifegeo.github.io/logo.png"
+anchor_asset_type="other"
+anchor_asset="5LIFE"
+attestations_of_authority="self"
