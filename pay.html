@@ -1,152 +1,158 @@
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>5LIFE PAY - TESTNET</title>
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
-body{background:#fff8e1;padding:16px;padding-bottom:90px}
-.header{background:#6f42c1;color:#fff;padding:14px;border-radius:14px;display:flex;justify-content:space-between;align-items:center}
-.badge{background:#ffc107;color:#000;font-size:10px;padding:3px 8px;border-radius:8px;font-weight:800}
-.card{background:#fff;border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 4px 12px rgba(0,0,0,.06)}
-.btn{width:100%;padding:12px;border:0;border-radius:10px;font-weight:800;margin:6px 0;cursor:pointer}
-.btn-main{background:#6f42c1;color:#fff}.btn-pay{background:#25D366;color:#fff}.btn-dark{background:#222;color:#fff}.btn-back{background:#eee}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;margin:6px 0}
-.small{font-size:12px;color:#666;word-break:break-all}
-#reader{width:100%;border-radius:12px;overflow:hidden;margin-top:8px}
-</style>
-</head><body>
-<div class="header"><b>👛 5LIFE PAY <span class="badge">TESTNET</span></b><span id="u" style="font-size:12px"></span></div>
-
-<div class="card">
-<div style="font-size:12px;opacity:.7">TESTNET PAY BALANCE - Zero Fee</div>
-<div style="font-size:32px;font-weight:900;color:#6f42c1"><span id="bal">0.00</span> 5LIFE</div>
-<div class="small">Key: pay_test_USERNAME = Zero Fee Wallet</div>
-</div>
-
-<div class="card" style="text-align:center">
-<b>📥 My TESTNET Receive QR</b>
-<p class="small">Pi Username mo = Receiver mo</p>
-<div style="display:flex;gap:8px;margin:10px 0">
-<button class="btn btn-main" style="flex:1" onclick="genQR('pay')">PAY TEST QR</button>
-<button class="btn btn-pay" style="flex:1" onclick="genQR('pi')">G... QR (Test)</button>
-</div>
-<div id="qrBox" style="display:flex;justify-content:center;padding:12px;background:#fff;border-radius:12px;border:1px dashed #ccc;min-height:140px;align-items:center">
-<span class="small">Pindutin PAY QR para sa Zero Fee</span>
-</div>
-<div id="qrInfo" class="small" style="margin-top:8px"></div>
-</div>
-
-<div class="card">
-<b>🔥 PAY to PAY - TESTNET Zero Fee</b><br><small class="small">Scan QR ng tropa</small>
-<input id="toUser" placeholder="Pi Username - auto fill">
-<input id="toAmt" type="number" placeholder="Amount">
-<button class="btn btn-dark" onclick="startScan()">📷 Scan QR to Send</button>
-<button class="btn btn-pay" onclick="payToPay()">⚡ Send Zero Fee (Testnet)</button>
-<div id="reader"></div>
-<p id="p2pMsg" class="small" style="margin-top:8px;color:green"></p>
-</div>
-
-<div class="card">
-<b>🧪 Testnet Info</b>
-<div class="small" style="margin:8px 0;background:#fff8e1;padding:8px;border-radius:8px">
-Asset: 5LIFE<br>Issuer: GD3OIJAV...2BS<br>Network: Pi Testnet<br>Zero Fee: PAY to PAY via username
-</div>
-<input id="piAddr" placeholder="Testnet G... (optional)">
-<input id="wAmt" type="number" placeholder="Amount">
-<button class="btn btn-main" onclick="requestWithdraw()">📤 Request Withdraw (Test)</button>
-<div id="hist" style="font-size:12px;margin-top:10px"></div>
-</div>
-
-<a href="index.html"><button class="btn btn-back">⬅️ Back to Mining Testnet</button></a>
-
-<script>
-Pi.init({version:"2.0", sandbox:true});
-let username = localStorage.getItem('5life_user') || 'guest';
-let balKey = 'pay_test_' + username;
-let balance = parseFloat(localStorage.getItem(balKey) || localStorage.getItem('pay_test') || '0');
-let html5QrCode;
-
-function update(){
-  document.getElementById('u').innerText = '@'+username;
-  document.getElementById('bal').innerText = balance.toFixed(2);
-  let h = JSON.parse(localStorage.getItem('pay_hist_test')||'[]');
-  document.getElementById('hist').innerHTML = h.slice(0,10).map(x=>'<div>• '+x+'</div>').join('') || '<span class="small">No transactions yet</span>';
-}
-update();
-
-async function ensureUser(){
-  if(username==='guest'){
-    try{
-      const auth = await Pi.authenticate(['username'],()=>{});
-      username = auth.user.username;
-      localStorage.setItem('5life_user', username);
-      balKey = 'pay_test_' + username;
-      balance = parseFloat(localStorage.getItem(balKey)||'0');
-      update();
-    }catch(e){ alert('Connect Pi Testnet muna'); throw e; }
-  }
-}
-
-function genQR(type){
-  let box = document.getElementById('qrBox');
-  let info = document.getElementById('qrInfo');
-  box.innerHTML = '';
-  if(type==='pay'){
-    let data = '5LIFE-PAY:' + username + ':TESTNET';
-    new QRCode(box, {text: data, width:180, height:180});
-    info.innerHTML = `<b>TESTNET Receiver:</b> @${username}<br>Data: ${data}<br><small>Zero Fee TESTNET</small>`;
-  }else{
-    let addr = document.getElementById('piAddr').value.trim() || 'G... test wallet';
-    new QRCode(box, {text: addr, width:180, height:180});
-    info.innerHTML = `<b>Testnet G...</b><br>${addr}<br><small>Asset: 5LIFE TESTNET</small>`;
-  }
-}
-
-function startScan(){
-  let readerDiv = document.getElementById('reader');
-  if(html5QrCode && html5QrCode.isScanning){ html5QrCode.stop(); readerDiv.innerHTML=''; return; }
-  html5QrCode = new Html5Qrcode("reader");
-  html5QrCode.start({facingMode:"environment"}, {fps:10, qrbox:250},
-  (decoded)=>{
-    let val = decoded;
-    if(val.includes('5LIFE-PAY:')) val = val.split('5LIFE-PAY:')[1].split(':')[0];
-    val = val.replace('@','').trim();
-    document.getElementById('toUser').value = val;
-    document.getElementById('p2pMsg').innerText = '✅ Na-scan si @'+val+' - TESTNET';
-    html5QrCode.stop();
-    readerDiv.innerHTML='';
-  }, ()=>{});
-}
-
-async function payToPay(){
-  await ensureUser();
-  let to = document.getElementById('toUser').value.trim().replace('@','').replace('5LIFE-PAY:','').split(':')[0];
-  let amt = parseFloat(document.getElementById('toAmt').value);
-  if(!to || !amt || amt<=0) return alert('Lagay username at amount');
-  if(amt > balance) return alert('Kulang balance');
-  balance -= amt; localStorage.setItem(balKey, balance); localStorage.setItem('pay_test', balance);
-  let toKey = 'pay_test_' + to;
-  let toBal = parseFloat(localStorage.getItem(toKey)||'0') + amt;
-  localStorage.setItem(toKey, toBal);
-  let h = JSON.parse(localStorage.getItem('pay_hist_test')||'[]');
-  h.unshift(new Date().toLocaleString()+': Sent '+amt.toFixed(2)+' to @'+to+' (Zero Fee TESTNET via QR)');
-  localStorage.setItem('pay_hist_test', JSON.stringify(h));
-  document.getElementById('p2pMsg').innerText = '✅ Sent '+amt+' 5LIFE to @'+to+' - Zero Fee TESTNET!';
-  update();
-}
-
-function requestWithdraw(){
-  let addr = document.getElementById('piAddr').value.trim();
-  let amt = parseFloat(document.getElementById('wAmt').value);
-  if(!addr.startsWith('G')) return alert('G... dapat');
-  if(amt > balance) return alert('Kulang');
-  let h = JSON.parse(localStorage.getItem('pay_hist_test')||'[]');
-  h.unshift(new Date().toLocaleString()+': Withdraw request TESTNET '+amt.toFixed(2)+' to '+addr.slice(0,8));
-  localStorage.setItem('pay_hist_test', JSON.stringify(h));
-  alert('✅ TESTNET Withdraw request logged!');
-  update();
-}
-</script>
+<!DOCTYPE html><html><head> 
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"> 
+<title>5LIFE PAY - TESTNET</title> 
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4a017">
+<meta property="og:image" content="logo.png">
+<script src="https://sdk.minepi.com/pi-sdk.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script> 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script> 
+<style> 
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui} 
+body{background:#fffbeb;padding:16px;padding-bottom:90px} 
+.header{background:linear-gradient(90deg,#0d7a3a,#d4a017);color:#fff;padding:12px 14px;border-radius:14px;display:flex;justify-content:space-between;align-items:center} 
+.header-left{display:flex;align-items:center;gap:8px}
+.header-left img{width:34px;height:34px;border-radius:50%;background:#fff;padding:2px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.badge{background:#fff;color:#0d7a3a;font-size:10px;padding:3px 8px;border-radius:8px;font-weight:900} 
+.card{background:#fff;border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 4px 12px rgba(0,0,0,.06)} 
+.btn{width:100%;padding:12px;border:0;border-radius:10px;font-weight:800;margin:6px 0;cursor:pointer} 
+.btn-main{background:#0d7a3a;color:#fff}.btn-pay{background:#d4a017;color:#000}.btn-dark{background:#222;color:#fff}.btn-back{background:#eee} 
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;margin:6px 0} 
+.small{font-size:12px;color:#666;word-break:break-all} 
+#reader{width:100%;border-radius:12px;overflow:hidden;margin-top:8px} 
+.logo-big{width:84px;height:84px;border-radius:50%;margin:0 auto 8px;display:block;box-shadow:0 6px 16px rgba(212,160,23,.3);border:3px solid #fff}
+.qr-wrap{position:relative}
+.qr-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none}
+</style> 
+</head><body> 
+<div class="header"><div class="header-left"><img src="logo.png"><b>5LIFE PAY</b> <span class="badge">TESTNET</span></div><span id="u" style="font-size:12px;font-weight:700"></span></div> 
+<div class="card" style="text-align:center"> 
+<img src="logo.png" class="logo-big">
+<div style="font-size:12px;opacity:.7">TESTNET PAY BALANCE - Zero Fee</div> 
+<div style="font-size:34px;font-weight:900;color:#0d7a3a"><span id="bal">0.00</span> 5LIFE</div> 
+<div class="small">Key: pay_test_USERNAME = Zero Fee Wallet</div> 
+</div> 
+<div class="card" style="text-align:center"> 
+<b>📥 My TESTNET Receive QR</b> 
+<p class="small">Pi Username mo = Receiver mo</p> 
+<div style="display:flex;gap:8px;margin:10px 0"> 
+<button class="btn btn-main" style="flex:1" onclick="genQR('pay')">PAY TEST QR</button> 
+<button class="btn btn-pay" style="flex:1" onclick="genQR('pi')">G... QR (Test)</button> 
+</div> 
+<div id="qrBox" class="qr-wrap" style="display:flex;justify-content:center;padding:12px;background:#fff;border-radius:12px;border:1px dashed #d4a017;min-height:160px;align-items:center"> 
+<span class="small">Pindutin PAY QR para sa Zero Fee<br><img src="logo.png" style="width:40px;margin-top:8px;border-radius:50%"></span> 
+</div> 
+<div id="qrInfo" class="small" style="margin-top:8px"></div> 
+</div> 
+<div class="card"> 
+<b>🔥 PAY to PAY - TESTNET Zero Fee</b><br><small class="small">Scan QR ng tropa</small> 
+<input id="toUser" placeholder="Pi Username - auto fill"> 
+<input id="toAmt" type="number" placeholder="Amount"> 
+<button class="btn btn-dark" onclick="startScan()">📷 Scan QR to Send</button> 
+<button class="btn btn-pay" onclick="payToPay()">⚡ Send Zero Fee (Testnet)</button> 
+<div id="reader"></div> 
+<p id="p2pMsg" class="small" style="margin-top:8px;color:#0d7a3a;font-weight:700"></p> 
+</div> 
+<div class="card"> 
+<b>🧪 Testnet Info</b> 
+<div class="small" style="margin:8px 0;background:#fff8e1;padding:10px;border-radius:8px;border-left:4px solid #d4a017"> 
+<img src="logo.png" style="width:20px;vertical-align:middle;border-radius:50%"> Asset: 5LIFE<br>
+Issuer: GD3OIJAV...2BS<br>Network: Pi Testnet<br>Zero Fee: PAY to PAY via username 
+</div> 
+<input id="piAddr" placeholder="Testnet G... (optional)"> 
+<input id="wAmt" type="number" placeholder="Amount"> 
+<button class="btn btn-main" onclick="requestWithdraw()">📤 Request Withdraw (Test)</button> 
+<div id="hist" style="font-size:12px;margin-top:10px"></div> 
+</div> 
+<a href="index.html"><button class="btn btn-back">⬅️ Back to Mining Testnet</button></a> 
+<script> 
+Pi.init({version:"2.0", sandbox:true}); 
+let username = localStorage.getItem('5life_user') || 'guest'; 
+let balKey = 'pay_test_' + username; 
+let balance = parseFloat(localStorage.getItem(balKey) || localStorage.getItem('pay_test') || '0'); 
+let html5QrCode; 
+function update(){ 
+document.getElementById('u').innerText = '@'+username; 
+document.getElementById('bal').innerText = balance.toFixed(2); 
+let h = JSON.parse(localStorage.getItem('pay_hist_test')||'[]'); 
+document.getElementById('hist').innerHTML = h.slice(0,10).map(x=>'<div>• '+x+'</div>').join('') || '<span class="small">No transactions yet</span>'; 
+} 
+update(); 
+async function ensureUser(){ 
+if(username==='guest'){ 
+try{ 
+const auth = await Pi.authenticate(['username'],()=>{}); 
+username = auth.user.username; 
+localStorage.setItem('5life_user', username); 
+balKey = 'pay_test_' + username; 
+balance = parseFloat(localStorage.getItem(balKey)||'0'); 
+update(); 
+}catch(e){ alert('Connect Pi Testnet muna'); throw e; } 
+} 
+} 
+function genQR(type){ 
+let box = document.getElementById('qrBox'); 
+let info = document.getElementById('qrInfo'); 
+box.innerHTML = ''; 
+if(type==='pay'){ 
+let data = '5LIFE-PAY:' + username + ':TESTNET'; 
+new QRCode(box, {text: data, width:180, height:180}); 
+setTimeout(()=>{ let img=document.createElement('img'); img.src='logo.png'; img.className='qr-watermark'; box.style.position='relative'; box.appendChild(img); }, 300);
+info.innerHTML = `<b>TESTNET Receiver:</b> @${username}<br>Data: ${data}<br><small>Zero Fee TESTNET - <img src='logo.png' style='width:14px;border-radius:50%;vertical-align:middle'> 5LIFE</small>`; 
+}else{ 
+let addr = document.getElementById('piAddr').value.trim() || 'G... test wallet'; 
+new QRCode(box, {text: addr, width:180, height:180}); 
+info.innerHTML = `<b>Testnet G...</b><br>${addr}<br><small>Asset: 5LIFE TESTNET</small>`; 
+} 
+} 
+function startScan(){ 
+let readerDiv = document.getElementById('reader'); 
+if(html5QrCode && html5QrCode.isScanning){ 
+html5QrCode.stop(); 
+readerDiv.innerHTML=''; 
+return; 
+} 
+html5QrCode = new Html5Qrcode("reader"); 
+html5QrCode.start({facingMode:"environment"}, {fps:10, qrbox:250}, (decoded)=>{ 
+let val = decoded; 
+if(val.includes('5LIFE-PAY:')) val = val.split('5LIFE-PAY:')[1].split(':')[0]; 
+val = val.replace('@','').trim(); 
+document.getElementById('toUser').value = val; 
+document.getElementById('p2pMsg').innerText = '✅ Na-scan si @'+val+' - TESTNET'; 
+html5QrCode.stop(); 
+readerDiv.innerHTML=''; 
+}, ()=>{}); 
+} 
+async function payToPay(){ 
+await ensureUser(); 
+let to = document.getElementById('toUser').value.trim().replace('@','').replace('5LIFE-PAY:','').split(':')[0]; 
+let amt = parseFloat(document.getElementById('toAmt').value); 
+if(!to || !amt || amt<=0) return alert('Lagay username at amount'); 
+if(amt > balance) return alert('Kulang balance'); 
+balance -= amt; 
+localStorage.setItem(balKey, balance); 
+localStorage.setItem('pay_test', balance); 
+let toKey = 'pay_test_' + to; 
+let toBal = parseFloat(localStorage.getItem(toKey)||'0') + amt; 
+localStorage.setItem(toKey, toBal); 
+let h = JSON.parse(localStorage.getItem('pay_hist_test')||'[]'); 
+h.unshift(new Date().toLocaleString()+': Sent '+amt.toFixed(2)+' to @'+to+' (Zero Fee TESTNET via QR)'); 
+localStorage.setItem('pay_hist_test', JSON.stringify(h)); 
+document.getElementById('p2pMsg').innerText = '✅ Sent '+amt+' 5LIFE to @'+to+' - Zero Fee TESTNET!'; 
+update(); 
+} 
+function requestWithdraw(){ 
+let addr = document.getElementById('piAddr').value.trim(); 
+let amt = parseFloat(document.getElementById('wAmt').value); 
+if(!addr.startsWith('G')) return alert('G... dapat'); 
+if(amt > balance) return alert('Kulang'); 
+let h = JSON.parse(localStorage.getItem('pay_hist_test')||'[]'); 
+h.unshift(new Date().toLocaleString()+': Withdraw request TESTNET '+amt.toFixed(2)+' to '+addr.slice(0,8)); 
+localStorage.setItem('pay_hist_test', JSON.stringify(h)); 
+alert('✅ TESTNET Withdraw request logged!'); 
+update(); 
+} 
+</script> 
 </body></html>
