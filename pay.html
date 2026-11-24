@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>5LIFE PAY v3 - Triple Wallet</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>body{font-family:Arial;background:#fff8e1;padding:10px;max-width:480px;margin:auto}.card{background:#fff;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1);margin-top:10px}.btn{width:100%;padding:12px;background:#6f42c1;color:#fff;border:0;border-radius:10px;margin-top:8px;font-weight:800}.btn2{background:#000}.btn3{background:#00a86b}.tab{display:flex;gap:6px}.tab div{flex:1;padding:10px;background:#eee;border-radius:8px;text-align:center;font-weight:700;cursor:pointer}.tab .on{background:#6f42c1;color:#fff}.input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:6px}.badge{padding:6px;border-radius:6px;margin-top:6px;font-size:11px;word-break:break-all;background:#efe6ff}</style>
+</head><body>
+<h3>5LIFE PAY 💜 v3</h3><small>Issuer: GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS</small>
+<div class="card">
+<div id="user">@ guest</div>
+<div class="badge">My PAY G...: <b id="myPub">No wallet</b></div><div id="qr"></div>
+<div class="badge">On-chain 5LIFE: <b id="onBal">0</b></div>
+<div class="badge">PAY Wallet (Zero-fee): <b id="payBal">0 5LIFE</b></div>
+<button class="btn" onclick="login()">Connect Pi Testnet</button>
+<button class="btn btn2" onclick="gen()">Generate PAY Wallet</button>
+<button class="btn" onclick="trust()">Add Trustline</button>
+<button class="btn btn3" onclick="topup()">Top-up 1 Pi = 555 5LIFE</button>
+</div>
+
+<div class="card">
+<div class="tab"><div id="t1" class="on" onclick="switchTab(1)">PAY→PAY</div><div id="t2" onclick="switchTab(2)">PAY→Pi Wallet</div><div id="t3" onclick="switchTab(3)">History</div></div>
+
+<div id="p1">
+<b>PAY Wallet to PAY Wallet (Zero Fee)</b>
+<input id="toUser" class="input" placeholder="@username ng receiver">
+<input id="amt1" class="input" type="number" placeholder="Amount">
+<button class="btn btn3" onclick="sendPayToPay()">Send PAY (Zero Fee)</button>
+<small>Username to Username lang, walang blockchain fee!</small>
+</div>
+
+<div id="p2" style="display:none">
+<b>PAY Wallet to Pi Account Wallet (On-chain)</b>
+<input id="toG" class="input" placeholder="G... Pi Wallet ng receiver">
+<input id="amt2" class="input" type="number" placeholder="Amount 5LIFE">
+<button class="btn" onclick="scan()">📷 Scan G...</button><div id="reader"></div>
+<button class="btn btn3" onclick="sendToPi()">Send to Pi Wallet (On-chain)</button>
+</div>
+
+<div id="p3" style="display:none"><div id="hist"></div></div>
+</div>
+
+<script>
+const ISSUER="GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS", HORIZON="https://api.testnet.minepi.com", PASS="Pi Testnet", RATE=555;
+const Pi=window.Pi; Pi.init({version:"2.0",sandbox:true});
+let kp=null, username=null;
+function getKP(){let s=localStorage.getItem('5life_sec_test'); return s?StellarSdk.Keypair.fromSecret(s):null}
+function load(){let p=localStorage.getItem('5life_pub_test'); if(p){document.getElementById('myPub').innerText=p; document.getElementById('qr').innerHTML=""; new QRCode(document.getElementById('qr'),{text:p,width:100,height:100}); kp=getKP(); bal()} let pay=localStorage.getItem('pay_test')||0; document.getElementById('payBal').innerText=pay+" 5LIFE"; let u=localStorage.getItem('5life_user'); if(u){username=u; document.getElementById('user').innerText="@"+u} showHist()}
+async function gen(){let k=StellarSdk.Keypair.random(); localStorage.setItem('5life_sec_test',k.secret()); localStorage.setItem('5life_pub_test',k.publicKey()); load(); try{await fetch(`https://friendbot.stellar.org?addr=${k.publicKey()}`); alert("Wallet "+k.publicKey()+" funded! Now Add Trustline")}catch(e){alert("Generated: "+k.publicKey())}}
+async function login(){let a=await Pi.authenticate(['username','payments'],()=>{}); username=a.user.username; localStorage.setItem('5life_user',username); document.getElementById('user').innerText="@"+username}
+async function trust(){kp=getKP(); if(!kp)return alert("Generate muna"); let s=new StellarSdk.Horizon.Server(HORIZON); let acc=await s.loadAccount(kp.publicKey()); let asset=new StellarSdk.Asset("5LIFE",ISSUER); let tx=new StellarSdk.TransactionBuilder(acc,{fee:"100000",networkPassphrase:PASS}).addOperation(StellarSdk.Operation.changeTrust({asset})).setTimeout(60).build(); tx.sign(kp); let r=await s.submitTransaction(tx); alert("Trustline OK "+r.hash); bal()}
+async function bal(){try{let s=new StellarSdk.Horizon.Server(HORIZON); let acc=await s.loadAccount(kp.publicKey()); let b=acc.balances.find(x=>x.asset_code==="5LIFE"); document.getElementById('onBal').innerText=b?b.balance:"0"}catch(e){}}
+async function topup(){await Pi.createPayment({amount:1,memo:"Top-up 555 5LIFE",metadata:{rate:RATE}},{onReadyForServerApproval:()=>{},onReadyForServerCompletion:()=>{let p=parseFloat(localStorage.getItem('pay_test')||0)+RATE; localStorage.setItem('pay_test',p); document.getElementById('payBal').innerText=p+" 5LIFE"; addHist(`+${RATE} TOP-UP`);}});}
+function switchTab(n){[1,2,3].forEach(i=>{document.getElementById('p'+i).style.display=i===n?'block':'none'; document.getElementById('t'+i).className=i===n?'on':''})}
+// PAY to PAY - Zero fee (off-chain)
+function sendPayToPay(){let to=document.getElementById('toUser').value.trim(); let amt=parseFloat(document.getElementById('amt1').value); let pay=parseFloat(localStorage.getItem('pay_test')||0); if(!to||!amt)return alert("Kulang"); if(pay<amt)return alert("Kulang PAY balance"); localStorage.setItem('pay_test',pay-amt); document.getElementById('payBal').innerText=(pay-amt)+" 5LIFE"; addHist(`PAY→PAY ${amt} to ${to} ZERO FEE`); alert(`✅ Sent ${amt} 5LIFE kay ${to} - ZERO FEE\nApp to App PAY Wallet`);}
+// PAY to Pi Wallet - On-chain
+async function sendToPi(){kp=getKP(); if(!kp)return alert("No wallet"); let to=document.getElementById('toG').value.trim(); let amt=document.getElementById('amt2').value; let s=new StellarSdk.Horizon.Server(HORIZON); let acc=await s.loadAccount(kp.publicKey()); let asset=new StellarSdk.Asset("5LIFE",ISSUER); let tx=new StellarSdk.TransactionBuilder(acc,{fee:"100000",networkPassphrase:PASS}).addOperation(StellarSdk.Operation.payment({destination:to,asset:asset,amount:amt})).setTimeout(60).build(); tx.sign(kp); let r=await s.submitTransaction(tx); addHist(`PAY→Pi ${amt} to ${to.slice(0,6)}... On-chain`); alert("✅ Sent to Pi Wallet "+r.hash);}
+function addHist(t){let h=JSON.parse(localStorage.getItem('pay_hist')||'[]'); h.unshift(new Date().toLocaleString()+": "+t); localStorage.setItem('pay_hist',JSON.stringify(h.slice(0,20))); showHist()}
+function showHist(){let h=JSON.parse(localStorage.getItem('pay_hist')||'[]'); document.getElementById('hist').innerHTML=h.join('<br>')||'No tx yet';}
+function scan(){let q=new Html5Qrcode("reader"); q.start({facingMode:"environment"},{fps:10,qrbox:250},t=>{document.getElementById('toG').value=t; q.stop();});}
+load();
+</script></body></html>
