@@ -1,95 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>5LIFE Chat</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5LIFE Chat - Community Chat for Pioneers</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
-body{font-family:sans-serif;background:#0f0f0f;color:white;max-width:480px;margin:auto;padding:15px}
-.card{background:#1e1e1e;padding:15px;border-radius:15px;margin-top:15px}
-button{width:100%;padding:12px;border-radius:10px;border:none;background:#6f42c1;color:white;font-weight:bold;margin-top:10px}
-.chat{height:300px;overflow-y:auto;background:#111;padding:10px;border-radius:10px;margin-top:10px}
+body{font-family:Inter,sans-serif;background:#0f0f0f;color:#eee;margin:0;max-width:480px;margin:auto}
+.header{padding:14px;background:#1a1a2e;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
+.card{background:#1e1e2e;padding:14px;margin:10px;border-radius:14px;border:1px solid #333}
+button{padding:11px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+.btn-pi{background:#6f42c1;color:white;width:100%}
+.btn-claim{background:#00c853;color:white;width:100%;margin-top:8px}
+.btn-wallet{background:#ff9800;color:white;width:100%;margin-top:8px}
+.tabs{display:flex;gap:6px;margin:10px}
+.tab{flex:1;padding:10px;background:#2a2a3a;border-radius:10px;text-align:center;font-size:13px}
+.tab.active{background:#6f42c1}
+.chat{height:48vh;overflow-y:auto;background:#111;margin:10px;border-radius:12px;padding:10px;border:1px solid #222}
+.msg{margin:7px 0;padding:8px 10px;background:#222;border-radius:10px;font-size:14px}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:15px}
+.modal.show{display:flex}
+.modalBox{background:#1e1e2e;padding:20px;border-radius:16px;width:100%;max-height:85vh;overflow-y:auto;border:1px solid #444}
+.footer{text-align:center;padding:20px;font-size:12px;opacity:.7}
+.footer a{color:#8a5cff;text-decoration:none;margin:0 6px}
+.userrow{display:flex;justify-content:space-between;padding:10px;background:#222;margin:6px 0;border-radius:10px}
 </style>
 </head>
 <body>
-<h2>💜 5LIFE Chat</h2>
-<div class="card">
-<p id="user">Not logged in</p>
-<p>Balance: <span id="bal">0</span> 5LIFE</p>
-<p>Daily Streak: <span id="streak">0</span> days</p>
-<button onclick="loginPi()">Login with Pi</button>
-<button onclick="claimDaily()" style="background:#00c853">Claim Daily 10 5LIFE</button>
-</div>
+<div class="header"><span>💜 5LIFE Chat</span><span id="online" style="font-size:12px">● 0 Pioneers</span></div>
 
 <div class="card">
-<div id="chatBox" class="chat"><small>Welcome to 5LIFE Chat...</small></div>
-<input id="msg" placeholder="Type message..." style="width:70%;padding:10px;border-radius:8px">
-<button onclick="sendMsg()" style="width:25%;display:inline">Send</button>
+<div id="user">Not logged in - Login with Pi to chat</div>
+<div style="margin-top:6px">Wallet: <b><span id="bal">32.92</span> 5LIFE Points</b> (Off-chain)</div>
+<div style="font-size:12px;opacity:.7">Today: <span id="todayClaimed">0</span>/5 claimed</div>
+<button class="btn-pi" onclick="loginPi()">Login with Pi Network</button>
+<button class="btn-claim" onclick="claimDaily()">Claim 1 Point (5x/day limit)</button>
+<button class="btn-wallet" onclick="openWallet()">💰 My Wallet</button>
+</div>
+
+<div class="tabs">
+<div class="tab active" id="t-global" onclick="switchTab('global')">Global</div>
+<div class="tab" id="t-dm" onclick="switchTab('dm')">DMs</div>
+<div class="tab" id="t-users" onclick="switchTab('users')">Pioneers</div>
+</div>
+
+<div id="globalTab"><div id="chatBox" class="chat">Login to join Global chat. Be respectful to all Pioneers.</div>
+<div style="display:flex;gap:5px;padding:10px"><input id="msg" placeholder="Message for all Pioneers..." style="width:70%;padding:12px;border-radius:10px;border:1px solid #333;background:#111;color:white"><button onclick="sendGlobal()" style="background:#6f42c1;color:white;width:28%">Send</button></div></div>
+
+<div id="dmTab" style="display:none"><div id="dmBox" class="chat"></div><div style="display:flex;gap:5px;padding:10px"><input id="dmMsg" placeholder="Private message..." style="width:70%;padding:12px;border-radius:10px"><button onclick="sendDM()" style="background:#00c853;color:white;width:28%">Send</button></div></div>
+
+<div id="usersTab" style="display:none"><div id="usersList" style="padding:10px"></div></div>
+
+<!-- WALLET MODAL -->
+<div id="walletModal" class="modal" onclick="if(event.target==this)closeWallet()"><div class="modalBox">
+<h3>💰 Wallet - 5LIFE Points</h3>
+<p>User: <b id="wUser">@-</b></p>
+<p>Balance: <b><span id="wBal">0</span> Points</b></p>
+<p>Today: <span id="wToday">0</span>/5</p>
+<p style="font-size:11px;background:#222;padding:8px;border-radius:8px">⚠️ These are OFF-CHAIN community points for chat engagement only. Not Pi, not cryptocurrency, not tradable on Pi blockchain. No monetary value.</p>
+<div id="wHistory" style="max-height:180px;overflow-y:auto;font-size:12px;margin-top:10px"></div>
+<button onclick="closeWallet()" style="width:100%;margin-top:12px;background:#333;color:white">Close</button>
+</div></div>
+
+<!-- ABOUT MODAL -->
+<div id="aboutModal" class="modal" onclick="if(event.target==this)closeAbout()"><div class="modalBox">
+<h3>About 5LIFE Chat</h3>
+<p><b>5LIFE Chat</b> is a community chat app built for Pi Pioneers to connect, chat globally and privately.</p>
+<p>Developed by: <b>FiveLifeGeo</b> - A Pi community builder in Philippines.</p>
+<p>Version: 1.0 | Built with Pi SDK + Firebase</p>
+<p>This app uses Pi Authentication only for username. No Pi payments required to chat.</p>
+<p>Token Info: 5LIFE (fivelifegeo) is a community token with 1B supply created on Pi Testnet for community purposes. Balance 32.92 shown from off-chain display.</p>
+<button onclick="closeAbout()" style="width:100%;background:#333;color:white">Close</button>
+</div></div>
+
+<!-- POLICY MODAL -->
+<div id="policyModal" class="modal" onclick="if(event.target==this)closePolicy()"><div class="modalBox">
+<h3>Privacy Policy</h3>
+<p><small>Last updated: Nov 27, 2026</small></p>
+<p>1. <b>Data we collect:</b> Pi username, Pi UID (from Pi SDK), chat messages, online status. Stored in Firebase Firestore.</p>
+<p>2. <b>Use:</b> To show chat, online users, and DM functionality.</p>
+<p>3. <b>We do NOT collect:</b> Pi password, private key, wallet passphrase, email, phone.</p>
+<p>4. <b>Storage:</b> Firebase (Google) - secure. Messages deleted after 90 days.</p>
+<p>5. <b>Children:</b> 13+ only per Pi TOS.</p>
+<p>6. Contact: fivelifegeo.github.io</p>
+<button onclick="closePolicy()" style="width:100%;background:#333;color:white">Close</button>
+</div></div>
+
+<!-- TERMS MODAL -->
+<div id="termsModal" class="modal" onclick="if(event.target==this)closeTerms()"><div class="modalBox">
+<h3>Terms of Service</h3>
+<p>1. Be respectful. No spam, hate, scam, NSFW.</p>
+<p>2. No Pi private keys sharing. We will never ask for it.</p>
+<p>3. Points are community engagement points, off-chain, no monetary value, not Pi cryptocurrency.</p>
+<p>4. 5 claims per day limit to prevent abuse. Reset 00:00 Asia/Manila.</p>
+<p>5. Pi Network is not affiliated with 5LIFE Chat. Pi SDK used under Pi Developer Terms.</p>
+<p>6. We reserve right to ban users violating Pi community guidelines.</p>
+<p>7. Testnet Mode: This app runs in Pi SDK sandbox/test mode until approved for Mainnet.</p>
+<button onclick="closeTerms()" style="width:100%;background:#333;color:white">Close</button>
+</div></div>
+
+<div class="footer">
+<a href="#" onclick="openAbout();return false">About</a> | 
+<a href="#" onclick="openPolicy();return false">Privacy Policy</a> | 
+<a href="#" onclick="openTerms();return false">Terms</a>
+<br><br>© 2026 5LIFE Community | Not affiliated with Pi Core Team<br>
+Built for Pi Ecosystem - Testnet
 </div>
 
 <script>
-// CONFIG - ITO LANG PALITAN MO
-const ISSUER = 'GD3OIJAV677OHQDZ25QXVDMWAD3AKJ6CGBMXKXZLGTBVUFC4TN2EX2BS';
-const DAILY_AMOUNT = 10;
+// REPLACE WITH YOUR FIREBASE - REQUIRED FOR COMPLIANCE (no local-only chat)
+const firebaseConfig = { apiKey:"YOUR_KEY", authDomain:"YOUR_DOMAIN", projectId:"YOUR_PROJECT", storageBucket:"YOUR_BUCKET", messagingSenderId:"YOUR_ID", appId:"YOUR_APP" };
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+const Pi=window.Pi; Pi.init({version:"2.0", sandbox:true});
 
-const Pi = window.Pi;
-Pi.init({version:"2.0", sandbox:true});
-
-let userWallet = null;
-
-async function loginPi(){
-  try{
-    const auth = await Pi.authenticate(['username','payments'], onIncompletePayment);
-    userWallet = auth.user.uid;
-    document.getElementById('user').innerText = "Hi, @"+auth.user.username;
-    loadStreak();
-  }catch(e){alert("Login failed: "+e.message)}
-}
-
-function onIncompletePayment(payment){console.log(payment)}
-
-function loadStreak(){
-  let streak = localStorage.getItem('5life_streak') || 0;
-  document.getElementById('streak').innerText = streak;
-  let bal = localStorage.getItem('5life_balance') || 0;
-  document.getElementById('bal').innerText = bal;
-}
-
-function claimDaily(){
-  if(!userWallet){alert("Login muna boss!");return;}
-  let last = localStorage.getItem('5life_lastClaim');
-  let today = new Date().toDateString();
-  if(last === today){alert("Nakuha mo na today boss! Bukas ulit.");return;}
-
-  // FOR NOW - LOCAL MUNA, PAG MAY BACKEND KA NA PALITAN NG FETCH
-  let bal = parseInt(localStorage.getItem('5life_balance')||0);
-  bal += DAILY_AMOUNT;
-  localStorage.setItem('5life_balance', bal);
-  localStorage.setItem('5life_lastClaim', today);
-  
-  let streak = parseInt(localStorage.getItem('5life_streak')||0)+1;
-  localStorage.setItem('5life_streak', streak);
-  
-  loadStreak();
-  addChat("System: +"+DAILY_AMOUNT+" 5LIFE claimed! Total: "+bal);
-  
-  // TODO: Pag may backend ka na, ipadala sa real wallet
-  // fetch('your-backend/claim', {method:'POST', body:JSON.stringify({wallet:userWallet, amount:DAILY_AMOUNT})})
-}
-
-function sendMsg(){
-  let m = document.getElementById('msg').value;
-  if(!m)return;
-  addChat("You: "+m);
-  document.getElementById('msg').value='';
-}
-function addChat(t){
-  let b = document.getElementById('chatBox');
-  b.innerHTML += "<div style='margin:5px 0'>"+t+"</div>";
-  b.scrollTop = b.scrollHeight;
-}
+let currentUser=null, currentUsername=null, activeDM=null; const DAILY_LIMIT=5;
+async function loginPi(){ try{ const a=await Pi.authenticate(['username'],()=>{}); currentUser=a.user.uid; currentUsername=a.user.username; document.getElementById('user').innerText="Hi @"+currentUsername+" (Verified Pioneer)"; document.getElementById('wUser').innerText="@"+currentUsername; await db.collection('users').doc(currentUser).set({username:currentUsername,lastSeen:Date.now(),balance:parseFloat(localStorage.getItem('5life_bal')||32.92)},{merge:true}); loadAll(); updateWalletUI(); }catch(e){alert(e.message)} }
+function switchTab(t){ document.getElementById('globalTab').style.display=t=='global'?'block':'none'; document.getElementById('dmTab').style.display=t=='dm'?'block':'none'; document.getElementById('usersTab').style.display=t=='users'?'block':'none'; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); document.getElementById('t-'+t).classList.add('active'); }
+function openWallet(){ document.getElementById('walletModal').classList.add('show'); updateWalletUI(); } function closeWallet(){ document.getElementById('walletModal').classList.remove('show'); }
+function openAbout(){ document.getElementById('aboutModal').classList.add('show'); } function closeAbout(){ document.getElementById('aboutModal').classList.remove('show'); }
+function openPolicy(){ document.getElementById('policyModal').classList.add('show'); } function closePolicy(){ document.getElementById('policyModal').classList.remove('show'); }
+function openTerms(){ document.getElementById('termsModal').classList.add('show'); } function closeTerms(){ document.getElementById('termsModal').classList.remove('show'); }
+function getTodayKey(){ return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}); }
+function updateWalletUI(){ let bal=parseFloat(localStorage.getItem('5life_bal')||32.92); let key=getTodayKey(); let claimed=parseInt(localStorage.getItem('5life_claim_'+key)||0); document.getElementById('bal').innerText=bal.toFixed(2); document.getElementById('wBal').innerText=bal.toFixed(2); document.getElementById('todayClaimed').innerText=claimed; document.getElementById('wToday').innerText=claimed; let hist=JSON.parse(localStorage.getItem('5life_hist')||'[]'); document.getElementById('wHistory').innerHTML=hist.slice(-10).reverse().map(h=>`<div style="padding:5px 0;border-bottom:1px solid #222">${h}</div>`).join('')||'<small>No claims yet</small>'; }
+function claimDaily(){ if(!currentUser)return alert("Login with Pi first!"); let key=getTodayKey(); let claimed=parseInt(localStorage.getItem('5life_claim_'+key)||0); if(claimed>=DAILY_LIMIT)return alert("Daily limit 5/5 reached. Try tomorrow 12MN PHT."); claimed++; let bal=parseFloat(localStorage.getItem('5life_bal')||32.92)+1; localStorage.setItem('5life_bal',bal); localStorage.setItem('5life_claim_'+key,claimed); let hist=JSON.parse(localStorage.getItem('5life_hist')||'[]'); hist.push(`+1 Point - ${new Date().toLocaleString()} - Bal: ${bal.toFixed(2)}`); localStorage.setItem('5life_hist',JSON.stringify(hist)); updateWalletUI(); db.collection('users').doc(currentUser).update({balance:bal,lastClaim:Date.now()}); alert(`Claimed ${claimed}/5 today!`); }
+function loadAll(){ db.collection('global_messages').orderBy('time','asc').limit(100).onSnapshot(snap=>{ let box=document.getElementById('chatBox'); box.innerHTML=''; snap.forEach(d=>{ let m=d.data(); box.innerHTML+=`<div class="msg"><b>@${m.username}</b>: ${m.text}</div>`; }); box.scrollTop=box.scrollHeight; }); db.collection('users').onSnapshot(snap=>{ let list=document.getElementById('usersList'); list.innerHTML=''; let c=0; snap.forEach(doc=>{ c++; let u=doc.data(); list.innerHTML+=`<div class="userrow"><span>@${u.username}</span><button onclick="openDM('${doc.id}','${u.username}')" style="background:#6f42c1;color:white">Message</button></div>`; }); document.getElementById('online').innerText=`● ${c} Pioneers`; }); }
+async function sendGlobal(){ let t=document.getElementById('msg').value.trim(); if(!t||!currentUser)return alert("Login first!"); if(t.length>200)return alert("Max 200 chars"); await db.collection('global_messages').add({uid:currentUser,username:currentUsername,text:t,time:Date.now()}); document.getElementById('msg').value=''; }
+function openDM(uid,uname){ activeDM=uid; switchTab('dm'); db.collection('dm').doc([currentUser,uid].sort().join('_')).collection('messages').orderBy('time').onSnapshot(snap=>{ let box=document.getElementById('dmBox'); box.innerHTML=`<small>Private with @${uname} - Respectful chat only</small>`; snap.forEach(doc=>{ let d=doc.data(); box.innerHTML+=`<div class="msg"><b>${d.from==currentUser?'You':'@'+uname}</b>: ${d.text}</div>`; }); box.scrollTop=box.scrollHeight; }); }
+async function sendDM(){ let t=document.getElementById('dmMsg').value.trim(); if(!t||!activeDM)return; let chatId=[currentUser,activeDM].sort().join('_'); await db.collection('dm').doc(chatId).collection('messages').add({from:currentUser,to:activeDM,text:t,time:Date.now()}); document.getElementById('dmMsg').value=''; }
+updateWalletUI();
 </script>
 </body>
-</html>
+  </html>
